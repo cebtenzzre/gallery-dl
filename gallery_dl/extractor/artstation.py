@@ -13,6 +13,7 @@ from .. import text, util, exception
 import itertools
 import random
 import string
+from urllib.parse import urlparse
 
 
 class ArtstationExtractor(Extractor):
@@ -28,6 +29,12 @@ class ArtstationExtractor(Extractor):
     def __init__(self, match):
         Extractor.__init__(self, match)
         self.user = match.group(1) or match.group(2)
+
+    def request(self, url, **kwargs):
+        headers = kwargs.pop("headers", {})
+        if urlparse(url).path.endswith('.json'):
+            headers["Cache-Control"] = "max-age=0"
+        return super().request(url, headers=headers, **kwargs)
 
     def items(self):
         videos = self.config("videos", True)
@@ -130,7 +137,7 @@ class ArtstationExtractor(Extractor):
     def get_user_info(self, username):
         """Return metadata for a specific user"""
         url = "{}/users/{}/quick.json".format(self.root, username.lower())
-        response = self.request(url, notfound="user", headers={ "Cache-Control": "max-age=0" })
+        response = self.request(url, notfound="user")
         return response.json()
 
     def _pagination(self, url, params=None, json=None):
